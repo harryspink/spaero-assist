@@ -5,7 +5,7 @@ use Livewire\Volt\Volt;
 
 // Root route - redirect to login if not authenticated
 Route::get('/', function () {
-    return auth()->check() ? redirect('/dashboard') : redirect('/login');
+    return auth()->check() ? redirect('/slides/search') : redirect('/login');
 });
 
 // Authentication routes

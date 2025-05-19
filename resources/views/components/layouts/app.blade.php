@@ -13,7 +13,7 @@
     {{-- NAVBAR mobile only --}}
     <x-nav sticky class="lg:hidden">
         <x-slot:brand>
-            <x-app-brand />
+            <img src="/logo.png" alt="{{ config('app.name') }}" class="h-8" />
         </x-slot:brand>
         <x-slot:actions>
             <label for="main-drawer" class="lg:hidden me-3">
@@ -28,7 +28,7 @@
         <x-slot:sidebar drawer="main-drawer" collapsible class="bg-base-100 lg:bg-inherit">
 
             {{-- BRAND --}}
-            <x-app-brand class="px-5 pt-4" />
+            <img src="/logo.png" alt="{{ config('app.name') }}" class=" px-5 pt-4" />
 
             {{-- MENU --}}
             <x-menu activate-by-route>
@@ -46,10 +46,10 @@
                     <x-menu-separator />
                 @endif
 
-                <x-menu-item title="Dashboard" icon="o-home" link="/" />
-                
                 @if(auth()->check())
                     <x-menu-item title="Slide Search" icon="o-magnifying-glass" link="{{ route('slides.search') }}" />
+                    
+                    <x-menu-separator />
                     
                     <x-menu-item title="Teams" icon="o-user-group" link="{{ route('teams.index') }}" />
                     

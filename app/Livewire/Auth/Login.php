@@ -28,7 +28,7 @@ class Login extends Component
             
             $this->success('Successfully logged in!', position: 'toast-bottom');
             
-            return redirect()->intended('/');
+            return redirect()->intended(route('slides.search'));
         }
 
         $this->error('The provided credentials do not match our records.', position: 'toast-bottom');

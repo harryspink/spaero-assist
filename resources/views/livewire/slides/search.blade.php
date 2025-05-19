@@ -109,6 +109,87 @@
                     </table>
                 </div>
             </x-card>
+            
+            <!-- Slide Tray Visualization -->
+            <x-card shadow class="mt-6">
+                <h3 class="text-lg font-semibold mb-4">Slide Tray</h3>
+                <div class="bg-base-200 p-4 rounded-lg">
+                    <div class="tray">
+                        <div class="tray-right">
+                            @foreach($results as $index => $slide)
+                                <div class="cutout">
+                                    <div class="slide" wire:click="viewSlide('{{ $slide['slide_url_path'] ?? '' }}')">
+                                        <div class="slide-label">
+                                            <img src="{{ $slide['thumbnail_url_path'] ?? '' }}" alt="Slide Thumbnail" class="w-full h-full object-cover rounded" />
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+                
+                <style>
+                    .tray {
+                      display: flex;
+                      background: #d3c9b8;
+                      width: 100%;
+                      height: 300px;
+                      border: 2px solid #aaa;
+                      border-radius: 6px;
+                      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+                      padding: 20px;
+                    }
+                
+                    .tray-right {
+                      display: flex;
+                      justify-content: flex-start;
+                      align-items: center;
+                      gap: 20px;
+                      width: 100%;
+                      overflow-x: auto;
+                      padding: 10px;
+                    }
+                
+                    .cutout {
+                        width: 90px;
+                        height: 230px;
+                        border: 2px dashed #aaa;
+                        border-radius: 6px;
+                        background: #f5f5f5;
+                        position: relative;
+                        flex-shrink: 0;
+                    }
+                
+                    .slide {
+                        width: 82px;
+                        height: 208px;
+                        background: rgba(180, 230, 250, 0.6);
+                        border: 1px solid #555;
+                        border-radius: 3px;
+                        position: absolute;
+                        top: 9px;
+                        left: 2px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        cursor: pointer;
+                        overflow: hidden;
+                    }
+                    
+                    .slide-label {
+                      writing-mode: vertical-rl;
+                      text-orientation: mixed;
+                      font-size: 10px;
+                      padding: 5px;
+                      width: 100%;
+                      height: 100%;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                    }
+                </style>
+            </x-card>
         @endif
 
         <!-- INITIAL STATE -->
