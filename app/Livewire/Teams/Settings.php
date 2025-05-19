@@ -11,9 +11,11 @@ class Settings extends Component
     use Toast;
 
     public $team;
+    public string $name = '';
     public string $slide_viewer_url = '';
 
     protected $rules = [
+        'name' => 'required|string|max:255',
         'slide_viewer_url' => 'nullable|url',
     ];
 
@@ -39,6 +41,7 @@ class Settings extends Component
                 return redirect()->route('teams.index');
             }
 
+            $this->name = $this->team->name;
             $this->slide_viewer_url = $this->team->slide_viewer_url ?? '';
             
         } catch (\Exception $e) {
@@ -58,6 +61,7 @@ class Settings extends Component
         $this->validate();
 
         $this->team->update([
+            'name' => $this->name,
             'slide_viewer_url' => $this->slide_viewer_url,
         ]);
 

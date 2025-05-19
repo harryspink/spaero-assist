@@ -51,10 +51,10 @@
                     
                     <x-menu-separator />
                     
-                    <x-menu-item title="Teams" icon="o-user-group" link="{{ route('teams.index') }}" />
+                    <x-menu-item title="Laboratories" icon="o-user-group" link="{{ route('teams.index') }}" />
                     
                     <div class="px-4 py-2">
-                        <div class="text-xs font-semibold text-base-content/50 mb-2">CURRENT TEAM</div>
+                        <div class="text-xs font-semibold text-base-content/50 mb-2">CURRENT LABORATORY</div>
                         <livewire:teams.switcher />
                     </div>
                 @endif
