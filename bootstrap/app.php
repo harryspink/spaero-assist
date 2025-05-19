@@ -11,7 +11,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        //
+        // Register the authentication middleware
+        $middleware->web();
+        
+        // Register the EnsureHasTeam middleware as a named middleware
+        $middleware->alias([
+            'ensure.has.team' => \App\Http\Middleware\EnsureHasTeam::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
