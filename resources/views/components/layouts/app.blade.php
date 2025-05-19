@@ -49,6 +49,8 @@
                 <x-menu-item title="Dashboard" icon="o-home" link="/" />
                 
                 @if(auth()->check())
+                    <x-menu-item title="Slide Search" icon="o-magnifying-glass" link="{{ route('slides.search') }}" />
+                    
                     <x-menu-item title="Teams" icon="o-user-group" link="{{ route('teams.index') }}" />
                     
                     <div class="px-4 py-2">
@@ -57,10 +59,6 @@
                     </div>
                 @endif
                 
-                <x-menu-sub title="Settings" icon="o-cog-6-tooth">
-                    <x-menu-item title="Profile" icon="o-user" link="####" />
-                    <x-menu-item title="Preferences" icon="o-adjustments-horizontal" link="####" />
-                </x-menu-sub>
             </x-menu>
         </x-slot:sidebar>
 

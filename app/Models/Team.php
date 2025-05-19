@@ -21,6 +21,7 @@ class Team extends Model
         'slug',
         'description',
         'owner_id',
+        'slide_viewer_url',
     ];
 
     /**

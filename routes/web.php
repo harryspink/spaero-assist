@@ -27,4 +27,8 @@ Route::middleware(['auth', 'ensure.has.team'])->group(function () {
     
     // Team routes that require a team
     Volt::route('/teams/{teamId}/members', 'teams.members')->name('teams.members');
+    Volt::route('/teams/{teamId}/settings', 'teams.settings')->name('teams.settings');
+    
+    // Slides routes
+    Volt::route('/slides/search', 'slides.search')->name('slides.search');
 });

@@ -76,7 +76,8 @@ new class extends Component {
         </x-slot:middle>
         <x-slot:actions>
             @if($currentTeam)
-                <x-button label="Manage Team" link="{{ route('teams.members', $currentTeam->id) }}" icon="o-users" class="btn-primary" />
+                <x-button label="Search Slides" link="{{ route('slides.search') }}" icon="o-magnifying-glass" class="btn-primary" />
+                <x-button label="Manage Team" link="{{ route('teams.members', $currentTeam->id) }}" icon="o-users" class="btn-outline" />
             @endif
             <x-button label="Filters" @click="$wire.drawer = true" responsive icon="o-funnel" />
         </x-slot:actions>
@@ -89,11 +90,23 @@ new class extends Component {
                 <div>
                     <h2 class="text-xl font-bold">{{ $currentTeam->name }}</h2>
                     <p class="text-base-content/70">{{ $currentTeam->description ?: 'No description provided' }}</p>
+                    
+                    @if($currentTeam->slide_viewer_url)
+                        <div class="mt-2">
+                            <a href="{{ $currentTeam->slide_viewer_url }}" target="_blank" class="flex items-center text-primary hover:underline">
+                                <x-icon name="o-link" class="w-4 h-4 mr-1" />
+                                <span>Slide Viewer</span>
+                            </a>
+                        </div>
+                    @endif
                 </div>
                 <div>
                     <div class="badge badge-primary">{{ count($members) }} Members</div>
                     <div class="badge badge-secondary">
                         Your Role: {{ $currentTeam->isOwner(auth()->user()) ? 'Owner' : auth()->user()->teams()->where('team_id', $currentTeam->id)->first()->pivot->role }}
+                    </div>
+                    <div class="mt-2">
+                        <x-button icon="o-cog-6-tooth" link="{{ route('teams.settings', $currentTeam->id) }}" class="btn-ghost btn-sm" label="Team Settings" />
                     </div>
                 </div>
             </div>
