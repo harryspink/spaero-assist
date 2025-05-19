@@ -83,7 +83,7 @@
                                     <td class="flex gap-2">
                                         <x-button 
                                             label="View Slide" 
-                                            wire:click="viewSlide('{{ $slide['slide_url_path'] ?? '' }}')" 
+                                            wire:click="viewSlide('{{ $slide['slide_url_path'] ?? '' }}', '{{ $slide['id'] ?? '' }}', '{{ $slide['case_no'] ?? '' }}', '{{ $slide['path'] ?? '' }}')" 
                                             icon="o-eye" 
                                             class="btn-primary btn-sm" 
                                             spinner 
@@ -118,7 +118,7 @@
                         <div class="tray-right">
                             @foreach($results as $index => $slide)
                                 <div class="cutout">
-                                    <div class="slide" wire:click="viewSlide('{{ $slide['slide_url_path'] ?? '' }}')">
+                                    <div class="slide" wire:click="viewSlide('{{ $slide['slide_url_path'] ?? '' }}', '{{ $slide['id'] ?? '' }}', '{{ $slide['case_no'] ?? '' }}', '{{ $slide['path'] ?? '' }}')">
                                         <div class="slide-label">
                                             <img src="{{ $slide['thumbnail_url_path'] ?? '' }}" alt="Slide Thumbnail" class="w-full h-full object-cover rounded" />
                                         </div>

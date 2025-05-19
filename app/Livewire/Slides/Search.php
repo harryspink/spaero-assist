@@ -70,7 +70,7 @@ class Search extends Component
         $this->isLoading = false;
     }
 
-    public function viewSlide($slideUrlPath)
+    public function viewSlide($slideUrlPath, $slideId = '', $caseNo = '', $path = '')
     {
         $team = auth()->user()->currentTeam;
         
@@ -79,10 +79,18 @@ class Search extends Component
             return;
         }
 
-        // If the team's slide viewer URL is set, use it instead of the default URL
-        if ($team->slide_viewer_url) {
-            return redirect()->away($slideUrlPath);
+        // Get the case number from the search term if not provided
+        if (empty($caseNo)) {
+            $caseNo = $this->search;
         }
+
+        // Redirect to the slide viewer page with the slide URL as a query parameter
+        return redirect()->route('slides.view', [
+            'url' => $slideUrlPath,
+            'id' => $slideId,
+            'case' => $caseNo,
+            'path' => $path
+        ]);
     }
 
     public function render()

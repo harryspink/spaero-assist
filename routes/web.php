@@ -31,4 +31,5 @@ Route::middleware(['auth', 'ensure.has.team'])->group(function () {
     
     // Slides routes
     Volt::route('/slides/search', 'slides.search')->name('slides.search');
+    Volt::route('/slides/view', 'slides.view')->name('slides.view');
 });
