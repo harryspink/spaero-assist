@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\StripeWebhookController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
@@ -20,6 +21,9 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('/teams/create', 'teams.create')->name('teams.create');
 });
 
+// Stripe webhook route
+Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook'])->name('stripe.webhook');
+
 // Routes that require authentication and a team
 Route::middleware(['auth', 'ensure.has.team'])->group(function () {
     // Dashboard route
@@ -28,6 +32,7 @@ Route::middleware(['auth', 'ensure.has.team'])->group(function () {
     // Team routes that require a team
     Volt::route('/teams/{teamId}/members', 'teams.members')->name('teams.members');
     Volt::route('/teams/{teamId}/settings', 'teams.settings')->name('teams.settings');
+    Volt::route('/teams/{teamId}/billing', 'teams.billing')->name('teams.billing');
     
     // Slides routes
     Volt::route('/slides/search', 'slides.search')->name('slides.search');

@@ -37,6 +37,34 @@
                     icon="o-link"
                 />
                 
+                <div class="border-t border-base-300 my-6 pt-6">
+                    <h3 class="text-lg font-semibold mb-4">Billing Management</h3>
+                    <p class="text-base-content/70 mb-4">Manage your organisation's subscription and billing information.</p>
+                    
+                    <div class="flex items-center justify-between p-4 border border-base-300 rounded-lg">
+                        <div>
+                            <h4 class="font-medium">Subscription Status</h4>
+                            <p class="text-base-content/70 text-sm mt-1">
+                                @if($team->subscribed())
+                                    Your subscription is active.
+                                @elseif($team->onTrial())
+                                    Your trial ends on {{ $team->trial_ends_at->format('M d, Y') }}.
+                                @elseif($team->subscription_status === 'canceled')
+                                    Your subscription has been canceled.
+                                @else
+                                    You don't have an active subscription.
+                                @endif
+                            </p>
+                        </div>
+                        <x-button 
+                            label="Manage Billing" 
+                            link="{{ route('teams.billing', $team->id) }}" 
+                            icon="o-credit-card" 
+                            class="btn-outline btn-primary" 
+                        />
+                    </div>
+                </div>
+                
                 <div class="pt-4">
                     <x-button label="Save Settings" wire:click="saveSettings" icon="o-check" class="btn-primary" spinner />
                 </div>
