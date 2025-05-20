@@ -1,7 +1,7 @@
 <div>
     @if($team)
         <!-- HEADER -->
-        <x-header title="{{ $team->name }}: Members" subtitle="Manage team members" separator back="{{ route('teams.index') }}" progress-indicator>
+        <x-header title="{{ $team->name }}: Members" subtitle="Manage organisation members" separator back="{{ route('teams.index') }}" progress-indicator>
             <x-slot:middle class="!justify-end">
                 <x-input placeholder="Search..." wire:model.live.debounce="search" clearable icon="o-magnifying-glass" />
             </x-slot:middle>
@@ -22,7 +22,7 @@
                                     <x-button icon="o-ellipsis-vertical" class="btn-ghost btn-sm" />
                                 </x-slot:trigger>
                                 <x-menu-item title="Change Role" icon="o-user" />
-                                <x-menu-item title="Remove from Team" icon="o-user-minus" wire:click="removeMember({{ $member->id }})" wire:confirm="Are you sure you want to remove this member from the team?" />
+                                <x-menu-item title="Remove from Organisation" icon="o-user-minus" wire:click="removeMember({{ $member->id }})" wire:confirm="Are you sure you want to remove this member from the organisation?" />
                             </x-dropdown>
                         @endif
                     </div>
@@ -35,7 +35,7 @@
         </x-card>
 
         <!-- ADD MEMBER DRAWER -->
-        <x-drawer wire:model="drawer" title="Add Team Member" right separator with-close-button class="lg:w-1/3">
+        <x-drawer wire:model="drawer" title="Add Organisation Member" right separator with-close-button class="lg:w-1/3">
             <form wire:submit="addMember" class="space-y-4">
                 <x-input label="Email Address" wire:model="email" placeholder="Enter email address" type="email" required />
                 
@@ -62,14 +62,14 @@
             </x-slot:actions>
         </x-drawer>
     @else
-        <!-- NO TEAM FOUND -->
+        <!-- NO ORGANISATION FOUND -->
         <x-card shadow>
             <div class="text-center py-8">
                 <x-icon name="o-exclamation-triangle" class="w-16 h-16 mx-auto text-warning" />
-                <h3 class="text-xl font-semibold mt-4">Team Not Found</h3>
-                <p class="text-base-content/70 mt-2">The team you're looking for doesn't exist or you don't have access to it.</p>
+                <h3 class="text-xl font-semibold mt-4">Organisation Not Found</h3>
+                <p class="text-base-content/70 mt-2">The organisation you're looking for doesn't exist or you don't have access to it.</p>
                 <div class="mt-6">
-                    <x-button label="Back to Teams" link="{{ route('teams.index') }}" icon="o-arrow-left" class="btn-primary" />
+                    <x-button label="Back to Organisations" link="{{ route('teams.index') }}" icon="o-arrow-left" class="btn-primary" />
                 </div>
             </div>
         </x-card>

@@ -29,9 +29,9 @@ class Index extends Component
         
         if ($team->isOwner(auth()->user())) {
             $team->delete();
-            $this->success('Team deleted successfully.', position: 'toast-bottom');
+            $this->success('Organisation deleted successfully.', position: 'toast-bottom');
         } else {
-            $this->error('You do not have permission to delete this team.', position: 'toast-bottom');
+            $this->error('You do not have permission to delete this organisation.', position: 'toast-bottom');
         }
     }
 
@@ -73,10 +73,10 @@ class Index extends Component
         $user = auth()->user();
         
         if ($user->switchTeam($team)) {
-            $this->success('Switched to team: ' . $team->name, position: 'toast-bottom');
+            $this->success('Switched to organisation: ' . $team->name, position: 'toast-bottom');
             $this->redirect(request()->header('Referer'));
         } else {
-            $this->error('Failed to switch teams.', position: 'toast-bottom');
+            $this->error('Failed to switch organisations.', position: 'toast-bottom');
         }
     }
 

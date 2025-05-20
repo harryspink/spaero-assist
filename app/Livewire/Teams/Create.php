@@ -33,7 +33,7 @@ class Create extends Component
         $user = auth()->user();
         
         if (!$user) {
-            $this->error('You must be logged in to create a team.', position: 'toast-bottom');
+            $this->error('You must be logged in to create an organisation.', position: 'toast-bottom');
             return redirect()->route('login');
         }
 
@@ -52,7 +52,7 @@ class Create extends Component
             $user->switchTeam($team);
         }
 
-        $this->success('Team created successfully!', position: 'toast-bottom');
+        $this->success('Organisation created successfully!', position: 'toast-bottom');
         $this->reset(['name', 'description']);
         
         return redirect()->route('teams.index');

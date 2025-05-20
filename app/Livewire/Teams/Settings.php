@@ -32,12 +32,12 @@ class Settings extends Component
             $this->team = $teamId ? Team::findOrFail($teamId) : $user->currentTeam;
             
             if (!$this->team) {
-                $this->error('No team selected.', position: 'toast-bottom');
+                $this->error('No organisation selected.', position: 'toast-bottom');
                 return redirect()->route('teams.index');
             }
             
             if (!$user->belongsToTeam($this->team)) {
-                $this->error('You do not have access to this team.', position: 'toast-bottom');
+                $this->error('You do not have access to this organisation.', position: 'toast-bottom');
                 return redirect()->route('teams.index');
             }
 
@@ -46,7 +46,7 @@ class Settings extends Component
             
         } catch (\Exception $e) {
             $this->team = null;
-            $this->error('Team not found.', position: 'toast-bottom');
+            $this->error('Organisation not found.', position: 'toast-bottom');
             return redirect()->route('teams.index');
         }
     }
@@ -54,7 +54,7 @@ class Settings extends Component
     public function saveSettings()
     {
         if (!$this->team) {
-            $this->error('No team selected.', position: 'toast-bottom');
+            $this->error('No organisation selected.', position: 'toast-bottom');
             return redirect()->route('teams.index');
         }
 
@@ -65,7 +65,7 @@ class Settings extends Component
             'slide_viewer_url' => $this->slide_viewer_url,
         ]);
 
-        $this->success('Team settings updated successfully.', position: 'toast-bottom');
+        $this->success('Organisation settings updated successfully.', position: 'toast-bottom');
     }
 
     public function render()

@@ -32,17 +32,17 @@ class Members extends Component
             $this->team = $teamId ? Team::findOrFail($teamId) : $user->currentTeam;
 
             if (!$this->team) {
-                $this->error('No team selected.', position: 'toast-bottom');
+                $this->error('No organisation selected.', position: 'toast-bottom');
                 return redirect()->route('teams.index');
             }
             
             if (!$user->belongsToTeam($this->team)) {
-                $this->error('You do not have access to this team.', position: 'toast-bottom');
+                $this->error('You do not have access to this organisation.', position: 'toast-bottom');
                 return redirect()->route('teams.index');
             }
         } catch (\Exception $e) {
             $this->team = null;
-            $this->error('Team not found.', position: 'toast-bottom');
+            $this->error('Organisation not found.', position: 'toast-bottom');
             return redirect()->route('teams.index');
         }
     }
@@ -94,7 +94,7 @@ class Members extends Component
     public function addMember()
     {
         if (!$this->team) {
-            $this->error('No team selected.', position: 'toast-bottom');
+            $this->error('No organisation selected.', position: 'toast-bottom');
             return redirect()->route('teams.index');
         }
         
@@ -111,7 +111,7 @@ class Members extends Component
         }
 
         if ($this->team->hasUser($user)) {
-            $this->error('User is already a member of this team.', position: 'toast-bottom');
+            $this->error('User is already a member of this organisation.', position: 'toast-bottom');
             return;
         }
 
@@ -120,7 +120,7 @@ class Members extends Component
         $currentUserRole = $currentUser->teams()->where('team_id', $this->team->id)->first()->pivot->role;
         
         if (!$this->team->isOwner($currentUser) && $currentUserRole !== 'admin') {
-            $this->error('You do not have permission to add members to this team.', position: 'toast-bottom');
+            $this->error('You do not have permission to add members to this organisation.', position: 'toast-bottom');
             return;
         }
 
@@ -132,7 +132,7 @@ class Members extends Component
     public function updateRole($userId, $newRole)
     {
         if (!$this->team) {
-            $this->error('No team selected.', position: 'toast-bottom');
+            $this->error('No organisation selected.', position: 'toast-bottom');
             return redirect()->route('teams.index');
         }
         
@@ -145,13 +145,13 @@ class Members extends Component
 
         // Only team owner can change roles
         if (!$this->team->isOwner($currentUser)) {
-            $this->error('Only the team owner can change roles.', position: 'toast-bottom');
+            $this->error('Only the organisation owner can change roles.', position: 'toast-bottom');
             return;
         }
 
         // Cannot change the role of the team owner
         if ($this->team->isOwner($user)) {
-            $this->error('Cannot change the role of the team owner.', position: 'toast-bottom');
+            $this->error('Cannot change the role of the organisation owner.', position: 'toast-bottom');
             return;
         }
 
@@ -162,7 +162,7 @@ class Members extends Component
     public function removeMember($userId)
     {
         if (!$this->team) {
-            $this->error('No team selected.', position: 'toast-bottom');
+            $this->error('No organisation selected.', position: 'toast-bottom');
             return redirect()->route('teams.index');
         }
         
@@ -171,7 +171,7 @@ class Members extends Component
 
         // Cannot remove the team owner
         if ($this->team->isOwner($user)) {
-            $this->error('Cannot remove the team owner.', position: 'toast-bottom');
+            $this->error('Cannot remove the organisation owner.', position: 'toast-bottom');
             return;
         }
 
@@ -179,7 +179,7 @@ class Members extends Component
         $currentUserRole = $currentUser->teams()->where('team_id', $this->team->id)->first()->pivot->role;
         
         if (!$this->team->isOwner($currentUser) && $currentUserRole !== 'admin') {
-            $this->error('You do not have permission to remove members from this team.', position: 'toast-bottom');
+            $this->error('You do not have permission to remove members from this organisation.', position: 'toast-bottom');
             return;
         }
 

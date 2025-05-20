@@ -25,7 +25,7 @@ class Team extends Model
     ];
 
     /**
-     * Get the owner of the laboratory.
+     * Get the owner of the organisation.
      */
     public function owner(): BelongsTo
     {
@@ -33,7 +33,7 @@ class Team extends Model
     }
 
     /**
-     * Get the users that belong to the laboratory.
+     * Get the users that belong to the organisation.
      */
     public function users(): BelongsToMany
     {
@@ -43,7 +43,7 @@ class Team extends Model
     }
 
     /**
-     * Determine if the given user belongs to the laboratory.
+     * Determine if the given user belongs to the organisation.
      */
     public function hasUser(User $user): bool
     {
@@ -51,7 +51,7 @@ class Team extends Model
     }
 
     /**
-     * Determine if the given user is the owner of the laboratory.
+     * Determine if the given user is the owner of the organisation.
      */
     public function isOwner(User $user): bool
     {

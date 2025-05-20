@@ -16,10 +16,10 @@ class Switcher extends Component
         $user = auth()->user();
         
         if ($user->switchTeam($team)) {
-            $this->success('Switched to team: ' . $team->name, position: 'toast-bottom');
+            $this->success('Switched to organisation: ' . $team->name, position: 'toast-bottom');
             $this->dispatch('team-switched');
         } else {
-            $this->error('Failed to switch teams.', position: 'toast-bottom');
+            $this->error('Failed to switch organisations.', position: 'toast-bottom');
         }
     }
 
