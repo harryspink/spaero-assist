@@ -33,6 +33,7 @@ Route::middleware(['auth', 'ensure.has.team'])->group(function () {
     Volt::route('/teams/{teamId}/members', 'teams.members')->name('teams.members');
     Volt::route('/teams/{teamId}/settings', 'teams.settings')->name('teams.settings');
     Volt::route('/teams/{teamId}/billing', 'teams.billing')->name('teams.billing');
+    Volt::route('/teams/{teamId}/credentials', 'teams.credentials')->name('teams.credentials');
     
     // Parts routes
     Volt::route('/parts/search', 'parts.search')->name('parts.search');

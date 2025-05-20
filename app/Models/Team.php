@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Team extends Model
 {
@@ -124,5 +125,24 @@ class Team extends Model
             'unpaid' => 'Unpaid',
             default => ucfirst($value),
         };
+    }
+    
+    /**
+     * Get the site credentials for the team.
+     */
+    public function siteCredentials(): HasMany
+    {
+        return $this->hasMany(SiteCredential::class);
+    }
+    
+    /**
+     * Get a specific site credential by site key.
+     *
+     * @param string $siteKey
+     * @return SiteCredential|null
+     */
+    public function getSiteCredential(string $siteKey): ?SiteCredential
+    {
+        return $this->siteCredentials()->where('site_key', $siteKey)->first();
     }
 }

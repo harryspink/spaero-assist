@@ -40,3 +40,7 @@
 .mary-table-pagination button {
     @apply cursor-pointer
 }
+
+table{
+    overflow: hidden;
+}

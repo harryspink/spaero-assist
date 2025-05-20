@@ -65,6 +65,26 @@
                     </div>
                 </div>
                 
+                <div class="border-t border-base-300 my-6 pt-6">
+                    <h3 class="text-lg font-semibold mb-4">Third-Party Credentials</h3>
+                    <p class="text-base-content/70 mb-4">Manage credentials for external systems and services used by your organisation.</p>
+                    
+                    <div class="flex items-center justify-between p-4 border border-base-300 rounded-lg">
+                        <div>
+                            <h4 class="font-medium">Site Credentials</h4>
+                            <p class="text-base-content/70 text-sm mt-1">
+                                Configure and manage credentials for third-party sites and services.
+                            </p>
+                        </div>
+                        <x-button 
+                            label="Manage Credentials" 
+                            link="{{ route('teams.credentials', $team->id) }}" 
+                            icon="o-key" 
+                            class="btn-outline btn-primary" 
+                        />
+                    </div>
+                </div>
+                
                 <div class="pt-4">
                     <x-button label="Save Settings" wire:click="saveSettings" icon="o-check" class="btn-primary" spinner />
                 </div>
