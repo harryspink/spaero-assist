@@ -6,7 +6,7 @@ use Livewire\Volt\Volt;
 
 // Root route - redirect to login if not authenticated
 Route::get('/', function () {
-    return auth()->check() ? redirect('/slides/search') : redirect('/login');
+    return auth()->check() ? redirect('/parts/search') : redirect('/login');
 });
 
 // Authentication routes
@@ -34,7 +34,7 @@ Route::middleware(['auth', 'ensure.has.team'])->group(function () {
     Volt::route('/teams/{teamId}/settings', 'teams.settings')->name('teams.settings');
     Volt::route('/teams/{teamId}/billing', 'teams.billing')->name('teams.billing');
     
-    // Slides routes
-    Volt::route('/slides/search', 'slides.search')->name('slides.search');
-    Volt::route('/slides/view', 'slides.view')->name('slides.view');
+    // Parts routes
+    Volt::route('/parts/search', 'parts.search')->name('parts.search');
+    Volt::route('/parts/view', 'parts.view')->name('parts.view');
 });

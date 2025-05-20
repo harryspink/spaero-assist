@@ -24,16 +24,16 @@
                 />
                 
                 <div class="border-t border-base-300 my-6 pt-6">
-                    <h3 class="text-lg font-semibold mb-4">Slide Viewer Settings</h3>
-                    <p class="text-base-content/70 mb-4">Configure the URL for the slide viewer that will be used by this organisation.</p>
+                    <h3 class="text-lg font-semibold mb-4">Part Viewer Settings</h3>
+                    <p class="text-base-content/70 mb-4">Configure the URL for the part viewer that will be used by this organisation.</p>
                 </div>
                 
                 <x-input 
-                    label="Slide Viewer URL" 
+                    label="Part Viewer URL" 
                     wire:model="slide_viewer_url" 
-                    placeholder="https://example.com/slide-viewer" 
+                    placeholder="https://example.com/part-viewer" 
                     type="url" 
-                    hint="Enter the full URL to your slide viewer application"
+                    hint="Enter the full URL to your part viewer application"
                     icon="o-link"
                 />
                 

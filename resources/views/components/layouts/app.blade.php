@@ -47,7 +47,7 @@
                 @endif
 
                 @if(auth()->check())
-                    <x-menu-item title="Part Search" icon="o-magnifying-glass" link="{{ route('slides.search') }}" />
+                    <x-menu-item title="Part Search" icon="o-magnifying-glass" link="{{ route('parts.search') }}" />
                     
                     <x-menu-separator />
                     
