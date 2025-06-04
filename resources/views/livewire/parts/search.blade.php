@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Models\SearchHistory;
 use Illuminate\Support\Collection;
 use Livewire\Volt\Component;
 use Mary\Traits\Toast;
@@ -108,6 +109,15 @@ new class extends Component {
         // Get the search term
         $searchTerm = $this->search;
         
+        // Create initial search history entry
+        $searchHistory = SearchHistory::create([
+            'user_id' => auth()->id(),
+            'team_id' => auth()->user()->current_team_id,
+            'search_term' => $searchTerm,
+            'results_count' => 0,
+            'success' => false,
+        ]);
+        
         // Create a unique ID for this search
         $searchId = uniqid('search_');
         $outputFile = storage_path('app/playwright_' . $searchId . '.json');
@@ -146,7 +156,8 @@ new class extends Component {
             'search_pid' => trim($pid),
             'search_output_file' => $outputFile,
             'search_term' => $searchTerm,
-            'search_started' => time()
+            'search_started' => time(),
+            'search_history_id' => $searchHistory->id
         ]);
         
         // Debug info
@@ -170,6 +181,7 @@ new class extends Component {
         $outputFile = session('search_output_file');
         $searchStarted = session('search_started', 0);
         $pid = session('search_pid');
+        $searchHistoryId = session('search_history_id');
         
         // If we don't have a search ID, something went wrong
         if (empty($searchId) || empty($outputFile)) {
@@ -266,6 +278,16 @@ new class extends Component {
                 'result_count' => count($this->searchResults),
                 'results' => $this->searchResults
             ]);
+            
+            // Update search history with success
+            if ($searchHistoryId) {
+                SearchHistory::where('id', $searchHistoryId)->update([
+                    'results_count' => count($this->searchResults),
+                    'success' => true,
+                    'search_results' => count($this->searchResults) <= 50 ? $this->searchResults : null, // Only store if not too many results
+                ]);
+            }
+            
             $this->success('Search completed successfully.', position: 'toast-bottom');
         } else {
             $this->searchResults = [];
@@ -284,11 +306,18 @@ new class extends Component {
             ]);
             
             $this->error('Failed to get data: ' . $errorMessage, position: 'toast-bottom');
+            
+            // Update search history with failure
+            if ($searchHistoryId) {
+                SearchHistory::where('id', $searchHistoryId)->update([
+                    'success' => false,
+                ]);
+            }
         }
         
         // Clean up
         @unlink($outputFile);
-        session()->forget(['search_id', 'search_pid', 'search_output_file', 'search_term', 'search_started']);
+        session()->forget(['search_id', 'search_pid', 'search_output_file', 'search_term', 'search_started', 'search_history_id']);
         
         // Release the search lock
         self::$searchLock = false;
