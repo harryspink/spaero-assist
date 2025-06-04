@@ -39,4 +39,5 @@ Route::middleware(['auth', 'ensure.has.team'])->group(function () {
     Volt::route('/parts/search', 'parts.search')->name('parts.search');
     Volt::route('/parts/view', 'parts.view')->name('parts.view');
     Route::get('/parts/search-history', \App\Livewire\Parts\SearchHistory::class)->name('parts.search-history');
+    Route::get('/parts/search-history/{id}/results', \App\Livewire\Parts\ViewStoredResults::class)->name('parts.search-history.results');
 });

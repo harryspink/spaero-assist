@@ -42,15 +42,16 @@ class SearchHistory extends Component
     }
 
     // View search results
-    public function viewResults($id): void
+    public function viewResults($id)
     {
         $history = SearchHistoryModel::where('team_id', auth()->user()->current_team_id)
             ->where('id', $id)
             ->first();
 
         if ($history && $history->search_results) {
-            // You can implement a modal or redirect to show the stored results
-            $this->info('This feature will show stored results in a future update.', position: 'toast-bottom');
+            return redirect()->route('parts.search-history.results', ['id' => $id]);
+        } else {
+            $this->warning('No stored results available for this search.', position: 'toast-bottom');
         }
     }
 
