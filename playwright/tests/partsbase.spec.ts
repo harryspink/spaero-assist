@@ -35,7 +35,7 @@ test.describe("PartsBase", () => {
     await page.waitForTimeout(5000);
 
     // Get the search term from the environment variable
-    const searchTerm = process.env.SEARCH_TERM || '69250C30015';
+    const searchTerm = process.env.SEARCH_TERM || '201042685';
     console.log(`Using search term: ${searchTerm}`);
     
     // Fill in search query
@@ -45,16 +45,19 @@ test.describe("PartsBase", () => {
     await page.getByRole('button', { name: 'Search' }).click();
     console.log('Clicked search button, waiting for results...');
 
+    await page.locator('.progress').waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+    await page.locator('.progress').waitFor({ state: 'hidden', timeout: 30000 });
+
     const result = await Promise.race([
-      page.waitForSelector('.table-result', { timeout: 50000 }),
+      page.waitForSelector('.table-result tbody', { timeout: 30000 }),
       page.waitForSelector('text=No PMA data available for', { timeout: 30000 }), 
     ]);
     console.log('Search results received');
     
-  const tableVisible = await page.locator('.table-result').isVisible();
+  const tableVisible = await page.locator('.table-result tbody').isVisible();
     if (tableVisible) {
       const data = await page.evaluate(() => {
-        const table = document.querySelector('.table-result');
+        const table = document.querySelector('.table-result tbody');
         const rows = Array.from(table?.querySelectorAll('tr') || []);
         return rows.map(row => {
           const cells = Array.from(row.querySelectorAll('td'));
