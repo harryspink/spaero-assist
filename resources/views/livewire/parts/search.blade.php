@@ -1,342 +1,457 @@
-<div>
+<?php
+
+use App\Models\User;
+use Illuminate\Support\Collection;
+use Livewire\Volt\Component;
+use Mary\Traits\Toast;
+
+new class extends Component {
+    use Toast;
+
+    public string $search = '';
+    public bool $drawer = false;
+    public array $sortBy = ['column' => '1', 'direction' => 'asc'];
+    public array $searchResults = [];
+    public bool $isLoading = false;
+    public bool $hasSearched = false;
+    public int $searchProgress = 0;
+    private static bool $searchLock = false;
+    
+    // Debug properties
+    public bool $showDebug = false;
+    public array $debugInfo = [];
+
+    // Clear filters
+    public function clear(): void
+    {
+        $this->reset();
+        $this->debugInfo = [];
+        $this->success('Filters cleared.', position: 'toast-bottom');
+    }
+    
+    // Toggle debug panel
+    public function toggleDebug(): void
+    {
+        $this->showDebug = !$this->showDebug;
+    }
+    
+    // Add debug message
+    private function addDebug(string $type, string $message, $data = null): void
+    {
+        $this->debugInfo[] = [
+            'timestamp' => now()->format('H:i:s.u'),
+            'type' => $type,
+            'message' => $message,
+            'data' => $data
+        ];
+        
+        // Keep only the last 50 debug messages
+        if (count($this->debugInfo) > 50) {
+            array_shift($this->debugInfo);
+        }
+        
+        // Also log to Laravel log
+        \Log::debug("[PARTS-SEARCH] [$type] $message", ['data' => $data]);
+    }
+    
+    // Cancel a search in progress
+    public function cancelSearch(): void
+    {
+        // Get the search information from the session
+        $pid = session('search_pid');
+        $outputFile = session('search_output_file');
+        
+        // If we have a process ID, try to kill it
+        if ($pid) {
+            shell_exec('kill -9 ' . intval($pid) . ' 2>/dev/null');
+        }
+        
+        // If we have an output file, delete it
+        if ($outputFile && file_exists($outputFile)) {
+            @unlink($outputFile);
+        }
+        
+        // Clean up session data
+        session()->forget(['search_id', 'search_pid', 'search_output_file', 'search_term', 'search_started']);
+        
+        // Release the search lock and reset progress
+        self::$searchLock = false;
+        $this->isLoading = false;
+        $this->searchProgress = 0;
+        
+        $this->info('Search cancelled.', position: 'toast-bottom');
+    }
+
+
+    // Start the search process
+    public function performSearch(): void
+    {
+        // Check if a search is already running
+        if (self::$searchLock) {
+            $this->warning('A search is already in progress. Please wait.', position: 'toast-bottom');
+            return;
+        }
+        
+        if (empty($this->search)) {
+            $this->error('Please enter a part number to search', position: 'toast-bottom');
+            return;
+        }
+        
+        // Set the search lock
+        self::$searchLock = true;
+        
+        // Set loading state and reset progress
+        $this->isLoading = true;
+        $this->searchProgress = 0;
+        $this->info('Starting search... This may take up to 2 minutes.', position: 'toast-bottom');
+        
+        // Get the search term
+        $searchTerm = $this->search;
+        
+        // Create a unique ID for this search
+        $searchId = uniqid('search_');
+        $outputFile = storage_path('app/playwright_' . $searchId . '.json');
+        
+        // Run the Playwright test in the background
+        $playwrightPath = base_path('playwright');
+        $escapedSearchTerm = escapeshellarg($searchTerm);
+        $escapedOutputFile = escapeshellarg($outputFile);
+
+        $tmpOutputFile = $outputFile . '.tmp';
+        
+        $playwrightCli = './node_modules/.bin/playwright'; // Replace with output of `which playwright`
+        $command = 'nohup bash -c ' . escapeshellarg(
+            'cd ' . $playwrightPath . ' && ' .
+            'SEARCH_TERM=' . escapeshellarg($searchTerm) . ' ' .
+            $playwrightCli . ' test tests/partsbase.spec.ts --project=chromium --reporter=list ' .
+            '> ' . escapeshellarg($tmpOutputFile) . ' 2>&1 && ' .
+            'mv ' . escapeshellarg($tmpOutputFile) . ' ' . escapeshellarg($outputFile)
+        ) . ' > /dev/null 2>&1 & echo $!';
+        
+        // Debug info
+        $this->addDebug('COMMAND', 'Executing playwright command', [
+            'search_term' => $searchTerm,
+            'output_file' => $outputFile,
+            'tmp_output_file' => $tmpOutputFile,
+            'playwright_path' => $playwrightPath,
+            'command' => $command
+        ]);
+        
+        // Execute the command and get the process ID
+        $pid = shell_exec($command);
+        
+        // Store the search information in the session
+        session([
+            'search_id' => $searchId,
+            'search_pid' => trim($pid),
+            'search_output_file' => $outputFile,
+            'search_term' => $searchTerm,
+            'search_started' => time()
+        ]);
+        
+        // Debug info
+        $this->addDebug('PROCESS', 'Started Playwright search process', [
+            'search_id' => $searchId,
+            'pid' => trim($pid),
+            'output_file' => $outputFile
+        ]);
+    }
+    
+    // Check the status of the search
+    public function checkSearchStatus(): void
+    {
+        // If we're not in a loading state, do nothing
+        if (!$this->isLoading) {
+            return;
+        }
+        
+        // Get the search information from the session
+        $searchId = session('search_id');
+        $outputFile = session('search_output_file');
+        $searchStarted = session('search_started', 0);
+        $pid = session('search_pid');
+        
+        // If we don't have a search ID, something went wrong
+        if (empty($searchId) || empty($outputFile)) {
+            $this->addDebug('ERROR', 'Search information not found in session');
+            $this->error('Search information not found.', position: 'toast-bottom');
+            $this->isLoading = false;
+            self::$searchLock = false;
+            return;
+        }
+        
+        // Debug current status
+        $this->addDebug('STATUS_CHECK', 'Checking search status', [
+            'search_id' => $searchId,
+            'pid' => $pid,
+            'elapsed_time' => time() - $searchStarted,
+            'output_file' => $outputFile,
+            'file_exists' => file_exists($outputFile)
+        ]);
+        
+        // Check if the output file exists
+        if (!file_exists($outputFile)) {
+            // Calculate how long the search has been running
+            $elapsedTime = time() - $searchStarted;
+            
+            // Update the progress (max 100%)
+            $this->searchProgress = min(95, ($elapsedTime / 120) * 100);
+            
+            // Check if process is still running
+            $processRunning = false;
+            if ($pid) {
+                $checkCommand = 'ps -p ' . intval($pid) . ' > /dev/null 2>&1; echo $?';
+                $processRunning = trim(shell_exec($checkCommand)) === '0';
+            }
+            
+            $this->addDebug('WAITING', 'Output file not found yet', [
+                'elapsed_seconds' => $elapsedTime,
+                'progress' => $this->searchProgress,
+                'process_running' => $processRunning
+            ]);
+            
+            // If the search has been running for more than 5 minutes, assume it failed
+            if ($elapsedTime > 300) {
+                $this->addDebug('TIMEOUT', 'Search timed out after 5 minutes');
+                $this->error('Search timed out after 5 minutes.', position: 'toast-bottom');
+                $this->isLoading = false;
+                self::$searchLock = false;
+                $this->hasSearched = true;
+                session()->forget(['search_id', 'search_pid', 'search_output_file', 'search_term', 'search_started']);
+            }
+            return;
+        }
+        
+        // Read the output file
+        $output = file_get_contents($outputFile);
+        $fileSize = filesize($outputFile);
+        
+        // Debug raw output
+        $this->addDebug('OUTPUT_FILE', 'Read output file', [
+            'file_size' => $fileSize,
+            'output_length' => strlen($output),
+            'output_preview' => substr($output, 0, 500),
+            'output_full' => $output
+        ]);
+        
+        // Parse the JSON output
+        $json = null;
+        $jsonStr = null;
+        if ($output) {
+            // Look for JSON in the output
+            if (preg_match('/(\{.*\})/s', $output, $matches)) {
+                $jsonStr = $matches[1];
+                $json = json_decode($jsonStr, true);
+                
+                $this->addDebug('JSON_PARSE', 'Extracted and parsed JSON', [
+                    'json_found' => true,
+                    'json_valid' => $json !== null,
+                    'json_error' => json_last_error_msg(),
+                    'json_string' => $jsonStr,
+                    'parsed_data' => $json
+                ]);
+            } else {
+                $this->addDebug('JSON_PARSE', 'No JSON found in output', [
+                    'json_found' => false
+                ]);
+            }
+        }
+        
+        // Set progress to 100% when we have a result
+        $this->searchProgress = 100;
+        
+        if ($json && isset($json['success']) && $json['success'] === true) {
+            $this->searchResults = $json['data'] ?? [];
+            $this->addDebug('SUCCESS', 'Search completed successfully', [
+                'result_count' => count($this->searchResults),
+                'results' => $this->searchResults
+            ]);
+            $this->success('Search completed successfully.', position: 'toast-bottom');
+        } else {
+            $this->searchResults = [];
+            $errorMessage = 'Unknown error';
+            if (!$output) {
+                $errorMessage = 'No output from Playwright test';
+            } elseif (!$json) {
+                $errorMessage = 'Failed to parse JSON from output';
+            } elseif (isset($json['success']) && $json['success'] === false) {
+                $errorMessage = $json['error'] ?? 'Search failed';
+            }
+            
+            $this->addDebug('ERROR', 'Search failed', [
+                'error_message' => $errorMessage,
+                'json_data' => $json
+            ]);
+            
+            $this->error('Failed to get data: ' . $errorMessage, position: 'toast-bottom');
+        }
+        
+        // Clean up
+        @unlink($outputFile);
+        session()->forget(['search_id', 'search_pid', 'search_output_file', 'search_term', 'search_started']);
+        
+        // Release the search lock
+        self::$searchLock = false;
+        $this->isLoading = false;
+        $this->hasSearched = true;
+    }
+
+    // Table headers
+    public function headers(): array
+    {
+        return [
+            ['key' => '1', 'label' => 'Part Number', 'class' => 'w-32'],
+            ['key' => '2', 'label' => 'Manufacturer', 'class' => 'w-48'],
+            ['key' => '3', 'label' => 'Description', 'class' => 'w-48'],
+            ['key' => '4', 'label' => 'Condition', 'class' => 'w-24'],
+            ['key' => '5', 'label' => 'Type', 'class' => 'w-24'],
+            ['key' => '6', 'label' => 'Quantity', 'class' => 'w-24'],
+            ['key' => '7', 'label' => 'Location', 'class' => 'w-32'],
+        ];
+    }
+
+    // Check if a search is in progress
+    public function isSearchInProgress(): bool
+    {
+        return self::$searchLock;
+    }
+    
+    // Clean up when the component is dehydrated (e.g., when the user navigates away)
+    public function dehydrate(): void
+    {
+        // If we have a search in progress, clean up
+        $outputFile = session('search_output_file');
+        if ($outputFile && file_exists($outputFile)) {
+            @unlink($outputFile);
+        }
+        
+        // Release the search lock
+        self::$searchLock = false;
+    }
+    
+    public function with(): array
+    {
+        if (!$this->hasSearched) {
+            return [
+                'users' => collect([]),
+                'headers' => $this->headers(),
+                'isLoading' => $this->isLoading,
+                'hasSearched' => $this->hasSearched,
+                'searchLocked' => $this->isSearchInProgress()
+            ];
+        }
+        
+        // Process search results into a format compatible with the table
+        $processedResults = collect($this->searchResults)
+            ->filter(fn($row) => count($row) > 5) // Filter out empty or header rows
+            ->map(function($row) {
+                // Map the array data to a keyed array for the table
+                return [
+                    'id' => $row[0] ?? '',
+                    '1' => $row[1] ?? '', // Part Number
+                    '2' => $row[3] ?? '', // Manufacturer
+                    '3' => $row[4] ?? '', // Description
+                    '4' => $row[5] ?? '', // Condition
+                    '5' => $row[6] ?? '', // Type
+                    '6' => $row[7] ?? '', // Quantity
+                    '7' => $row[11] ?? '', // Location
+                ];
+            });
+            
+        return [
+            'users' => $processedResults,
+            'headers' => $this->headers(),
+            'isLoading' => $this->isLoading,
+            'hasSearched' => $this->hasSearched,
+            'searchLocked' => $this->isSearchInProgress()
+        ];
+    }
+}; ?>
+
+<div wire:poll.5s="checkSearchStatus">
     <!-- HEADER -->
-    <x-header title="Part Search" subtitle="Search for parts and view them in the part viewer" separator progress-indicator>
-        <x-slot:middle class="!justify-end">
-            <form wire:submit="searchParts" class="flex gap-2 w-full max-w-md">
+    <x-header title="Parts Base Product Search" separator :progress-indicator="$isLoading">
+        <x-slot:middle class="!justify-end flex gap-2">
+            <form wire:submit="performSearch" class="flex gap-2 w-full max-w-md">
                 <x-input 
-                    placeholder="Enter case ID..." 
+                    placeholder="Enter part ID..." 
                     wire:model="search" 
                     clearable 
                     icon="o-magnifying-glass" 
                     class="w-full"
+                    :disabled="$isLoading"
                 />
-                <x-button type="submit" label="Search" icon="o-magnifying-glass" class="btn-primary" spinner />
+                <x-button type="submit" label="Search" icon="o-magnifying-glass" class="btn-primary" :disabled="$isLoading" spinner />
             </form>
         </x-slot:middle>
     </x-header>
 
-    <!-- CONTENT -->
-    <div class="space-y-6">
-        <!-- ERROR MESSAGE -->
-        @if($error)
-            <x-card shadow>
-                <div class="text-center py-6">
-                    <x-icon name="o-exclamation-triangle" class="w-16 h-16 mx-auto text-warning" />
-                    <h3 class="text-xl font-semibold mt-4">Error</h3>
-                    <p class="text-base-content/70 mt-2">{{ $error }}</p>
-                    @if(str_contains($error, 'part viewer URL'))
-                        <div class="mt-6">
-                            <x-button 
-                                label="Configure Part Viewer" 
-                                link="{{ auth()->user()->currentTeam ? route('teams.settings', auth()->user()->currentTeam->id) : route('teams.index') }}" 
-                                icon="o-cog-6-tooth" 
-                                class="btn-primary" 
-                            />
-                        </div>
-                    @endif
+    <!-- DEBUG PANEL -->
+    @if($showDebug)
+    <x-card class="mb-4 bg-base-200">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold">Debug Information</h3>
+            <x-button wire:click="toggleDebug" icon="o-x-mark" class="btn-sm btn-ghost" />
+        </div>
+        <div class="overflow-auto max-h-96 text-xs font-mono">
+            @foreach(array_reverse($debugInfo) as $debug)
+            <div class="mb-2 p-2 bg-base-100 rounded">
+                <div class="flex gap-2 items-center mb-1">
+                    <span class="text-gray-500">{{ $debug['timestamp'] }}</span>
+                    <span class="badge badge-sm 
+                        @if($debug['type'] === 'ERROR') badge-error
+                        @elseif($debug['type'] === 'SUCCESS') badge-success
+                        @elseif($debug['type'] === 'COMMAND') badge-primary
+                        @else badge-info
+                        @endif">
+                        {{ $debug['type'] }}
+                    </span>
+                    <span class="font-semibold">{{ $debug['message'] }}</span>
                 </div>
-            </x-card>
-        @endif
+                @if($debug['data'])
+                <pre class="text-xs overflow-auto bg-base-200 p-1 rounded">{{ json_encode($debug['data'], JSON_PRETTY_PRINT) }}</pre>
+                @endif
+            </div>
+            @endforeach
+        </div>
+    </x-card>
+    @endif
 
-        <!-- LOADING STATE -->
+    <!-- TABLE  -->
+    <x-card shadow>
+        <!-- Debug button in top right corner -->
+        <div class="absolute top-4 right-4">
+            <x-button wire:click="toggleDebug" icon="o-bug-ant" class="btn-sm btn-ghost" title="Toggle Debug Info" />
+        </div>
         @if($isLoading)
-            <x-card shadow>
-                <div class="flex justify-center items-center py-12">
-                    <span class="loading loading-spinner loading-lg text-primary"></span>
-                </div>
-            </x-card>
-        @endif
-
-        <!-- SEARCH RESULTS -->
-        @if(!$isLoading && $hasSearched && empty($results) && !$error)
-            <x-card shadow>
-                <div class="text-center py-8">
-                    <x-icon name="o-magnifying-glass" class="w-16 h-16 mx-auto text-base-content/30" />
-                    <h3 class="text-xl font-semibold mt-4">No Results Found</h3>
-                    <p class="text-base-content/70 mt-2">Try a different search term or check your part viewer configuration.</p>
-                </div>
-            </x-card>
-        @endif
-
-        @if(!$isLoading && !empty($results))
-            <x-card shadow>
-                <h3 class="text-lg font-semibold mb-4">Search Results</h3>
+            <div class="flex flex-col justify-center items-center p-8 gap-4">
+                <span class="loading loading-spinner loading-lg text-primary"></span>
+                <p class="text-gray-500">Searching PartsBase... This may take up to 2 minutes.</p>
                 
-                <div class="overflow-x-auto">
-                    <table class="table table-zebra">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Case No</th>
-                                <th>Path</th>
-                                <th>Scanned Date</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($results as $part)
-                                <tr>
-                                    <td>{{ $part['id'] ?? 'N/A' }}</td>
-                                    <td>{{ $part['case_no'] ?? 'N/A' }}</td>
-                                    <td>{{ $part['path'] ?? 'N/A' }}</td>
-                                    <td>{{ $part['scanned_date'] ?? 'N/A' }}</td>
-                                    <td class="flex gap-2">
-                                        <x-button 
-                                            label="View Part" 
-                                            wire:click="viewPart('{{ $part['slide_url_path'] ?? '' }}', '{{ $part['id'] ?? '' }}', '{{ $part['case_no'] ?? '' }}', '{{ $part['path'] ?? '' }}')" 
-                                            icon="o-eye" 
-                                            class="btn-primary btn-sm" 
-                                            spinner 
-                                        />
-                                        
-                                        @if(isset($part['thumbnail_url_path']))
-                                            <a href="{{ $part['thumbnail_url_path'] }}" target="_blank" class="btn btn-sm btn-outline">
-                                                <x-icon name="o-photo" class="w-4 h-4 mr-1" />
-                                                Thumbnail
-                                            </a>
-                                        @endif
-                                        
-                                        @if(isset($part['label_url_path']))
-                                            <a href="{{ $part['label_url_path'] }}" target="_blank" class="btn btn-sm btn-ghost">
-                                                <x-icon name="o-tag" class="w-4 h-4 mr-1" />
-                                                Label
-                                            </a>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </x-card>
-            
-            <!-- Part Tray Visualization -->
-            <x-card shadow class="mt-6">
-                <h3 class="text-lg font-semibold mb-4">Part Tray</h3>
-                <div class="bg-base-200 p-4 rounded-lg overflow-hidden">
-                    <div class="tray">
-                        <div class="tray-left">
-                            <div class="tray-label">
-                                <div class="case-id">{{ $results[0]['case_no'] ?? 'Case ID' }}</div>
-                                <div class="date">{{ $results[0]['scanned_date'] ?? date('Y-m-d') }}</div>
-                                <div class="part-count">Parts: {{ count($results) }}</div>
-                                <div class="lab-info">{{ auth()->user()->currentTeam->name ?? 'Pathology Laboratory' }} Laboratory</div>
-                            </div>
-                        </div>
-                        <div class="tray-right">
-                            @foreach($results as $index => $part)
-                                <div class="cutout">
-                                    <div class="slide" wire:click="viewPart('{{ $part['slide_url_path'] ?? '' }}', '{{ $part['id'] ?? '' }}', '{{ $part['case_no'] ?? '' }}', '{{ $part['path'] ?? '' }}')">
-                                        <div class="slide-label">
-                                            <img src="{{ $part['thumbnail_url_path'] ?? '' }}" alt="Part Thumbnail" class="w-full h-full object-cover rounded" />
-                                        </div>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
+                <!-- Progress bar -->
+                <div class="w-full max-w-md mt-4">
+                    <div class="bg-gray-200 rounded-full h-2.5">
+                        <div class="bg-primary h-2.5 rounded-full" style="width: {{ $searchProgress }}%"></div>
                     </div>
+                    <p class="text-xs text-gray-500 mt-1 text-center">{{ round($searchProgress) }}% complete</p>
                 </div>
                 
-                <style>
-                    .tray {
-                        display: flex;
-                        background-image: 
-                            linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.1) 75%, transparent 75%, transparent),
-                            linear-gradient(to right, #d5c5a9, #e0d2b8);
-                        background-size: 10px 10px, 100% 100%;
-                        width: 100%;
-                        height: 300px;
-                        border: 2px solid #b5a48c;
-                        border-radius: 8px;
-                        box-shadow: 
-                            0 4px 15px rgba(0,0,0,0.2),
-                            inset 0 0 30px rgba(0,0,0,0.1);
-                        padding: 0;
-                        position: relative;
-                        overflow: hidden;
-                    }
-                    
-                    .tray:before {
-                        content: '';
-                        position: absolute;
-                        top: 0;
-                        left: 0;
-                        right: 0;
-                        height: 5px;
-                        background: linear-gradient(to bottom, rgba(255,255,255,0.4), transparent);
-                        border-radius: 6px 6px 0 0;
-                    }
-                    
-                    .tray:after {
-                        content: '';
-                        position: absolute;
-                        bottom: 0;
-                        left: 0;
-                        right: 0;
-                        height: 5px;
-                        background: linear-gradient(to top, rgba(0,0,0,0.2), transparent);
-                        border-radius: 0 0 6px 6px;
-                    }
-                
-                    .tray-left {
-                        flex: 1;
-                        border-right: 2px solid #b5a48c;
-                        position: relative;
-                        padding: 20px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        background: linear-gradient(135deg, #e0d2b8, #d5c5a9);
-                        box-shadow: inset -5px 0 10px -5px rgba(0,0,0,0.2);
-                    }
-                    
-                    .tray-label {
-                        width: 90%;
-                        height: 80%;
-                        background: white;
-                        border: 1px solid #ccc;
-                        border-radius: 4px;
-                        padding: 15px;
-                        display: flex;
-                        flex-direction: column;
-                        justify-content: space-between;
-                        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-                        font-family: monospace;
-                    }
-                    
-                    .case-id {
-                        font-size: 18px;
-                        font-weight: bold;
-                        margin-bottom: 10px;
-                    }
-                    
-                    .date {
-                        font-size: 14px;
-                        color: #555;
-                        margin-bottom: 10px;
-                    }
-                    
-                    .part-count {
-                        font-size: 14px;
-                        color: #555;
-                        margin-bottom: 10px;
-                        font-weight: bold;
-                    }
-                    
-                    .lab-info {
-                        font-size: 12px;
-                        color: #777;
-                        margin-top: auto;
-                        border-top: 1px dashed #ccc;
-                        padding-top: 10px;
-                    }
-                
-                    .tray-right {
-                        flex: 2;
-                        display: flex;
-                        justify-content: flex-start;
-                        align-items: center;
-                        gap: 20px;
-                        width: 100%;
-                        overflow-x: auto;
-                        padding: 20px;
-                        background: linear-gradient(135deg, #d5c5a9, #e0d2b8);
-                        box-shadow: inset 5px 0 10px -5px rgba(0,0,0,0.1);
-                    }
-                    
-                    .tray-right::-webkit-scrollbar {
-                        height: 8px;
-                    }
-                    
-                    .tray-right::-webkit-scrollbar-track {
-                        background: rgba(0,0,0,0.05);
-                        border-radius: 4px;
-                    }
-                    
-                    .tray-right::-webkit-scrollbar-thumb {
-                        background: rgba(0,0,0,0.2);
-                        border-radius: 4px;
-                    }
-                
-                    .cutout {
-                        width: 90px;
-                        height: 230px;
-                        border: 2px solid #aaa;
-                        border-radius: 6px;
-                        background: #f5f5f5;
-                        position: relative;
-                        flex-shrink: 0;
-                        box-shadow: 
-                            inset 0 0 10px rgba(0,0,0,0.1),
-                            0 2px 5px rgba(0,0,0,0.1);
-                        overflow: hidden;
-                    }
-                    
-                    .cutout:before {
-                        content: '';
-                        position: absolute;
-                        top: 0;
-                        left: 0;
-                        right: 0;
-                        bottom: 0;
-                        border: 2px dashed rgba(0,0,0,0.1);
-                        border-radius: 4px;
-                        pointer-events: none;
-                    }
-                
-                    .slide {
-                        width: 82px;
-                        height: 208px;
-                        background: rgba(180, 230, 250, 0.8);
-                        border: 1px solid #555;
-                        border-radius: 3px;
-                        position: absolute;
-                        top: 9px;
-                        left: 3px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        cursor: pointer;
-                        overflow: hidden;
-                        box-shadow: 
-                            0 2px 5px rgba(0,0,0,0.2),
-                            inset 0 0 10px rgba(255,255,255,0.5);
-                        transition: transform 0.2s ease, box-shadow 0.2s ease;
-                    }
-                    
-                    .slide:hover {
-                        transform: translateY(-3px);
-                        box-shadow: 
-                            0 5px 10px rgba(0,0,0,0.3),
-                            inset 0 0 10px rgba(255,255,255,0.5);
-                    }
-                    
-                    .slide-label {
-                        writing-mode: vertical-rl;
-                        text-orientation: mixed;
-                        font-size: 10px;
-                        padding: 5px;
-                        width: 100%;
-                        height: 100%;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                    }
-                </style>
-            </x-card>
+                <x-button wire:click="cancelSearch" class="btn-error mt-4">Cancel Search</x-button>
+            </div>
+        @elseif(!$hasSearched)
+            <div class="text-center py-12">
+                <x-icon name="o-document-magnifying-glass" class="w-24 h-24 mx-auto text-base-content/20" />
+                <h3 class="text-xl font-semibold mt-6">Search for Parts</h3>
+                <p class="text-base-content/70 mt-2 max-w-md mx-auto">
+                    Enter a part ID in the search box above to find parts. You'll be able to see a list of your searches in your teams search history.
+                </p>
+            </div>
+        @elseif(count($users) === 0)
+            <div class="p-8 text-center text-gray-500">
+                No results found for "{{ $search }}"
+            </div>
+        @else
+            <x-table :headers="$headers" :rows="$users" :sort-by="$sortBy" />
         @endif
-
-        <!-- INITIAL STATE -->
-        @if(!$hasSearched && !$isLoading)
-            <x-card shadow>
-                <div class="text-center py-12">
-                    <x-icon name="o-document-magnifying-glass" class="w-24 h-24 mx-auto text-base-content/20" />
-                    <h3 class="text-xl font-semibold mt-6">Search for Parts</h3>
-                    <p class="text-base-content/70 mt-2 max-w-md mx-auto">
-                        Enter a part ID in the search box above to find parts. You'll be able to see a list of your searches in your teams search history.
-                    </p>
-                </div>
-            </x-card>
-        @endif
-    </div>
+    </x-card>
 </div>

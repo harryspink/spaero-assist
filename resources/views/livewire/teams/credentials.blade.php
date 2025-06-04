@@ -2,9 +2,6 @@
     @if($team)
         <!-- HEADER -->
         <x-header title="{{ $team->name }}: Credentials" subtitle="Manage your organisation's third-party site credentials" separator back="{{ route('teams.index') }}" progress-indicator>
-            <x-slot:actions>
-                <x-button label="Add Credentials" @click="$wire.showCredentialModal = true" icon="o-plus" class="btn-primary" />
-            </x-slot:actions>
         </x-header>
 
         <!-- CREDENTIALS LIST -->

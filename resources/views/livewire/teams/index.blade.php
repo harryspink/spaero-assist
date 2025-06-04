@@ -17,8 +17,6 @@
                 <div class="flex gap-1">
                     <x-button icon="o-arrow-path" wire:click="switchTeam({{ $team['id'] }})" spinner class="btn-ghost btn-sm" tooltip="Switch to this organisation" />
                     <x-button icon="o-users" link="{{ route('teams.members', $team['id']) }}" class="btn-ghost btn-sm" tooltip="Manage members" />
-                    <x-button icon="o-credit-card" link="{{ route('teams.billing', $team['id']) }}" class="btn-ghost btn-sm" tooltip="Billing & Subscription" />
-                    <x-button icon="o-key" link="{{ route('teams.credentials', $team['id']) }}" class="btn-ghost btn-sm" tooltip="Site Credentials" />
                     <x-button icon="o-cog-6-tooth" link="{{ route('teams.settings', $team['id']) }}" class="btn-ghost btn-sm" tooltip="Organisation settings" />
                     @if($team['role'] === 'Owner')
                         <x-button icon="o-trash" wire:click="delete({{ $team['id'] }})" wire:confirm="Are you sure you want to delete this organisation?" spinner class="btn-ghost btn-sm text-error" tooltip="Delete organisation" />

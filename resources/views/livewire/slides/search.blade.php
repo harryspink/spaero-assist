@@ -4,7 +4,7 @@
         <x-slot:middle class="!justify-end">
             <form wire:submit="searchSlides" class="flex gap-2 w-full max-w-md">
                 <x-input 
-                    placeholder="Enter case ID..." 
+                    placeholder="Enter part ID..." 
                     wire:model="search" 
                     clearable 
                     icon="o-magnifying-glass" 
