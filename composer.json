@@ -11,6 +11,7 @@
         "laravel/tinker": "^2.10.1",
         "livewire/livewire": "^3.6",
         "livewire/volt": "^1.7",
+        "openai-php/client": "^0.13.0",
         "robsontenorio/mary": "^2.4",
         "stripe/stripe-php": "^17.2"
     },

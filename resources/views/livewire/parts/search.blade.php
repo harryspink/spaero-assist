@@ -413,6 +413,15 @@ new class extends Component {
                 <x-button type="submit" label="Search" icon="o-magnifying-glass" class="btn-primary" :disabled="$isLoading" spinner />
             </form>
         </x-slot:middle>
+        <x-slot:actions>
+            <x-button 
+                label="AI Chat Search" 
+                icon="o-chat-bubble-left-right" 
+                link="/parts/chat-search" 
+                class="btn-ghost"
+                tooltip="Try our AI-powered search assistant"
+            />
+        </x-slot:actions>
     </x-header>
 
     <!-- DEBUG PANEL -->

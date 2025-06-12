@@ -48,6 +48,7 @@
 
                 @if(auth()->check())
                     <x-menu-item title="Part Search" icon="o-magnifying-glass" link="{{ route('parts.search') }}" />
+                    <x-menu-item title="AI Chat Search" icon="o-chat-bubble-left-right" link="{{ route('parts.chat-search') }}" />
                     <x-menu-item title="Search History" icon="o-clock" link="{{ route('parts.search-history') }}" />
                     
                     <x-menu-separator />
