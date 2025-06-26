@@ -41,4 +41,9 @@ Route::middleware(['auth', 'ensure.has.team'])->group(function () {
     Volt::route('/parts/view', 'parts.view')->name('parts.view');
     Route::get('/parts/search-history', \App\Livewire\Parts\SearchHistory::class)->name('parts.search-history');
     Route::get('/parts/search-history/{id}/results', \App\Livewire\Parts\ViewStoredResults::class)->name('parts.search-history.results');
+    
+    // Supplier conversation routes
+    Route::get('/parts/supplier-conversations', \App\Livewire\Parts\SupplierConversations::class)->name('parts.supplier-conversations');
+    Route::get('/parts/supplier-conversation/create', \App\Livewire\Parts\SupplierConversationCreate::class)->name('parts.supplier-conversation.create');
+    Route::get('/parts/supplier-conversation/{id}', \App\Livewire\Parts\SupplierConversationView::class)->name('parts.supplier-conversation.view');
 });

@@ -47,7 +47,16 @@
                 </p>
             </div>
         @else
-            <x-table :headers="$headers" :rows="$results" :sort-by="$sortBy" />
+            <x-table :headers="$headers" :rows="$results" :sort-by="$sortBy">
+                @scope('cell_actions', $result)
+                    <x-button 
+                        wire:click="startConversation({{ json_encode($result) }})"
+                        icon="o-chat-bubble-left-right" 
+                        class="btn-sm btn-ghost"
+                        tooltip="Start conversation with supplier"
+                    />
+                @endscope
+            </x-table>
         @endif
     </x-card>
 </div>
