@@ -1,7 +1,6 @@
-# Stage 1: PHP dependencies and Composer
+# Stage 1: Build and Composer
 FROM php:8.2-fpm-alpine AS php
 
-# Install system dependencies
 RUN apk add --no-cache \
     nginx \
     bash \
@@ -17,6 +16,7 @@ RUN apk add --no-cache \
     autoconf \
     g++ \
     make \
+    openssh \
     && docker-php-ext-install pdo pdo_mysql mbstring zip bcmath intl gd
 
 # Install Composer
@@ -32,26 +32,42 @@ COPY . .
 RUN composer install --optimize-autoloader --no-dev \
     && chown -R www-data:www-data /var/www
 
-# Stage 2: Final image with Nginx + PHP-FPM
+# Stage 2: Runtime
 FROM php:8.2-fpm-alpine
 
-# Install Nginx and required PHP extensions
-RUN apk add --no-cache nginx oniguruma libzip libpng libjpeg-turbo freetype icu-libs
+RUN apk add --no-cache \
+    nginx \
+    bash \
+    curl \
+    libzip \
+    libpng \
+    libjpeg-turbo \
+    freetype \
+    icu-libs \
+    oniguruma \
+    openssh \
+    supervisor \
+    && mkdir -p /home/site/wwwroot /home/LogFiles /opt/startup /run/nginx /run/sshd \
+    && echo "root:Docker!" | chpasswd \
+    && sed -i 's/#Port 22/Port 2222/' /etc/ssh/sshd_config \
+    && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 
+# Copy PHP and app
 COPY --from=php /usr/local /usr/local
 COPY --from=php /var/www /var/www
 
-# Copy nginx config
+# Copy Nginx config
 COPY docker/nginx/default.conf /etc/nginx/http.d/default.conf
 
-# Create nginx run directory
-RUN mkdir -p /run/nginx
+# Copy startup script
+COPY docker/startup.sh /opt/startup/startup.sh
+RUN chmod +x /opt/startup/startup.sh
 
 # Set working directory
 WORKDIR /var/www
 
-# Expose port 80
-EXPOSE 80
+# Ports: 80 (web), 2222 (Azure SSH)
+EXPOSE 80 2222
 
-# Start nginx and php-fpm
-CMD ["sh", "-c", "php artisan migrate --force && php-fpm -D && nginx -g 'daemon off;'"]
+# Start SSH, Laravel, PHP, and Nginx
+CMD ["/opt/startup/startup.sh"]

@@ -37,7 +37,7 @@ class Register extends Component
 
         $this->success('Account created successfully!', position: 'toast-bottom');
         
-        return redirect()->route('slides.search');
+        return redirect()->route('parts.search');
     }
 
     public function render()
