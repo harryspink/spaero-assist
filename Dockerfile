@@ -54,4 +54,4 @@ WORKDIR /var/www
 EXPOSE 80
 
 # Start nginx and php-fpm
-CMD ["sh", "-c", "php-fpm -D && nginx -g 'daemon off;'"]
+CMD ["sh", "-c", "php artisan migrate --force && php-fpm -D && nginx -g 'daemon off;'"]
